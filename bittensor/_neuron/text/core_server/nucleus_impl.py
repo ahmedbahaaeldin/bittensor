@@ -58,12 +58,13 @@ class server(torch.nn.Module):
         self.config = config;print(config)
         self.std_tokenizer = bittensor.tokenizer()
         self.device = config.neuron.device
-
+        self.gpu_map = eval(config.neuron.gpu_map)
         #setting up pretrained model
         self.model_name = model_name if model_name != None else config.neuron.model_name
         self.pretrained = pretrained if pretrained != None else config.neuron.pretrained
         if self.pretrained == True:
-            self.pre_model = model if model != None else AutoModelForCausalLM.from_pretrained(self.model_name)
+            #mapping = {0:"10GiB",1:"10GiB",2:"10GiB"}
+            self.pre_model = model if model != None else AutoModelForCausalLM.from_pretrained(self.model_name, device_map="auto",max_memory=self.gpu_map, load_in_8bit=True)
             self.tokenizer = tokenizer
             if tokenizer is None:
                 try:
@@ -543,7 +544,7 @@ class server(torch.nn.Module):
     def config ():
         parser = argparse.ArgumentParser()
         parser.add_argument('--config', type=str, help='If set, defaults are overridden by passed file.')
-
+        parser.add_argument('--neuron.gpu_map', type=str, help='how to map desired model on gpu')
         # ML model arguements
         parser.add_argument('--neuron.learning_rate', type=float, help='Training initial learning rate.', default=0.01)
         parser.add_argument('--neuron.momentum', type=float, help='optimizer momentum.', default=0.8)
